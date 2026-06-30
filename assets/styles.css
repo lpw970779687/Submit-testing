@@ -299,6 +299,9 @@
     }
 
     .article h1 { font-size: 2rem; }
+    .article > h1:first-child {
+      text-align: center;
+    }
     .article h2 { font-size: 1.55rem; }
     .article h3 { font-size: 1.2rem; }
 
