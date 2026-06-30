@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>送检测试记录</title>
+  <meta name="description" content="展示 testing 目录下的 Markdown 送检测试记录" />
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fb;
+      --panel: rgba(255, 255, 255, 0.86);
+      --panel-strong: #ffffff;
+      --text: #102033;
+      --muted: #5f6f84;
+      --border: rgba(16, 32, 51, 0.12);
+      --accent: #0f62fe;
+      --accent-soft: rgba(15, 98, 254, 0.1);
+      --shadow: 0 18px 50px rgba(16, 32, 51, 0.12);
+      --radius: 20px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(15, 98, 254, 0.12), transparent 32%),
+        radial-gradient(circle at top right, rgba(0, 196, 180, 0.10), transparent 28%),
+        linear-gradient(180deg, #eef3fb 0%, #f7f9fc 38%, #eef3fb 100%);
+      min-height: 100vh;
+    }
+
+    .shell {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .hero {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 20px;
+      padding: 24px;
+      border: 1px solid var(--border);
+      border-radius: calc(var(--radius) + 4px);
+      background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.72));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: clamp(28px, 4vw, 42px);
+      letter-spacing: -0.03em;
+    }
+
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+      max-width: 68ch;
+    }
+
+    .status {
+      font-size: 14px;
+      color: var(--muted);
+      text-align: right;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 320px minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+      overflow: hidden;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 24px;
+    }
+
+    .panel-head {
+      padding: 18px 18px 14px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.80));
+    }
+
+    .panel-head h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .panel-head .subtle {
+      margin-top: 6px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .record-list {
+      list-style: none;
+      margin: 0;
+      padding: 8px;
+      max-height: calc(100vh - 240px);
+      overflow: auto;
+    }
+
+    .record-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 14px 14px 13px;
+      border-radius: 16px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+    }
+
+    .record-item:hover {
+      background: rgba(15, 98, 254, 0.05);
+      transform: translateY(-1px);
+    }
+
+    .record-item.active {
+      background: var(--accent-soft);
+      border-color: rgba(15, 98, 254, 0.18);
+    }
+
+    .record-name {
+      font-weight: 650;
+      word-break: break-word;
+    }
+
+    .record-meta {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .content {
+      min-width: 0;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.82));
+    }
+
+    .toolbar h2 {
+      margin: 0;
+      font-size: 20px;
+      word-break: break-word;
+    }
+
+    .toolbar .meta {
+      font-size: 13px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .article {
+      padding: 20px 22px 28px;
+      background: var(--panel-strong);
+    }
+
+    .article :is(h1, h2, h3, h4) {
+      line-height: 1.25;
+      margin: 1.1em 0 0.5em;
+    }
+
+    .article h1 { font-size: 2rem; }
+    .article h2 { font-size: 1.55rem; }
+    .article h3 { font-size: 1.25rem; }
+
+    .article p, .article li {
+      line-height: 1.75;
+      color: #213245;
+    }
+
+    .article img {
+      max-width: 100%;
+      border-radius: 14px;
+    }
+
+    .article pre {
+      overflow: auto;
+      padding: 16px;
+      border-radius: 14px;
+      background: #0b1220;
+      color: #e8eefc;
+    }
+
+    .article code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 0.95em;
+    }
+
+    .article pre code {
+      color: inherit;
+    }
+
+    .article blockquote {
+      margin: 1em 0;
+      padding: 0.75em 1em;
+      border-left: 4px solid var(--accent);
+      background: rgba(15, 98, 254, 0.06);
+      border-radius: 0 12px 12px 0;
+      color: #274060;
+    }
+
+    .article table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1em 0;
+      overflow: hidden;
+      border-radius: 14px;
+    }
+
+    .article th, .article td {
+      padding: 12px 14px;
+      border: 1px solid rgba(16, 32, 51, 0.12);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .article th {
+      background: #f2f6ff;
+    }
+
+    .empty, .error {
+      padding: 48px 24px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .error {
+      color: #b42318;
+    }
+
+    .loading {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid rgba(16, 32, 51, 0.18);
+      border-top-color: var(--accent);
+      animation: spin 0.85s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 980px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: static;
+      }
+
+      .record-list {
+        max-height: 340px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .shell {
+        padding: 14px;
+      }
+
+      .hero,
+      .toolbar {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .status,
+      .toolbar .meta {
+        white-space: normal;
+        text-align: left;
+      }
+
+      .article {
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="hero">
+      <div>
+        <h1>送检测试记录</h1>
+        <p>自动展示仓库 <code>testing/</code> 目录中的 Markdown 记录。你只需要把新的 <code>.md</code> 文件放进这个目录，网页会在刷新后自动加载最新内容。</p>
+      </div>
+      <div class="status" id="globalStatus">
+        <div class="loading"><span class="spinner"></span><span>正在读取记录</span></div>
+      </div>
+    </section>
+
+    <main class="layout">
+      <aside class="panel sidebar">
+        <div class="panel-head">
+          <h2>记录列表</h2>
+          <div class="subtle">按文件名排序，点击即可查看对应 Markdown 内容。</div>
+        </div>
+        <ul class="record-list" id="recordList">
+          <li class="empty">正在加载文件列表...</li>
+        </ul>
+      </aside>
+
+      <section class="panel content">
+        <div class="toolbar">
+          <h2 id="recordTitle">等待加载</h2>
+          <div class="meta" id="recordMeta">GitHub Pages 页面</div>
+        </div>
+        <article class="article" id="recordContent">
+          <div class="empty">从 <code>testing/</code> 选择一个 Markdown 文件后，这里会显示内容。</div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const OWNER = "lpw970779687";
+    const REPO = "Submit-testing";
+    const TESTING_DIR = "testing";
+    const API_BASE = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${TESTING_DIR}`;
+
+    const state = {
+      records: [],
+      activePath: null,
+    };
+
+    const recordList = document.getElementById("recordList");
+    const recordTitle = document.getElementById("recordTitle");
+    const recordMeta = document.getElementById("recordMeta");
+    const recordContent = document.getElementById("recordContent");
+    const globalStatus = document.getElementById("globalStatus");
+
+    function setGlobalStatus(html) {
+      globalStatus.innerHTML = html;
+    }
+
+    function formatDate(value) {
+      if (!value) return "未知时间";
+      try {
+        return new Intl.DateTimeFormat("zh-CN", {
+          dateStyle: "medium",
+          timeStyle: "short",
+        }).format(new Date(value));
+      } catch {
+        return value;
+      }
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function renderList() {
+      if (!state.records.length) {
+        recordList.innerHTML = '<li class="empty">没有找到 Markdown 记录。</li>';
+        return;
+      }
+
+      recordList.replaceChildren(...state.records.map((item) => {
+        const li = document.createElement("li");
+        li.className = `record-item${item.path === state.activePath ? " active" : ""}`;
+        li.dataset.path = item.path;
+
+        const name = document.createElement("span");
+        name.className = "record-name";
+        name.textContent = item.name;
+
+        const meta = document.createElement("span");
+        meta.className = "record-meta";
+        meta.textContent = formatDate(item.updatedAt);
+
+        li.append(name, meta);
+        li.addEventListener("click", () => loadRecord(item));
+        return li;
+      }));
+    }
+
+    function setActiveRecord(item) {
+      state.activePath = item.path;
+      renderList();
+      recordTitle.textContent = item.name;
+      recordMeta.textContent = `${item.path} · 最后更新 ${formatDate(item.updatedAt)}`;
+    }
+
+    function renderMarkdown(markdown) {
+      const raw = marked.parse(markdown, { breaks: true });
+      recordContent.innerHTML = DOMPurify.sanitize(raw, {
+        USE_PROFILES: { html: true },
+      });
+    }
+
+    async function loadRecord(item) {
+      setActiveRecord(item);
+      recordContent.innerHTML = '<div class="empty">正在加载内容...</div>';
+
+      try {
+        const response = await fetch(item.downloadUrl, { cache: "no-store" });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        const markdown = await response.text();
+        renderMarkdown(markdown);
+      } catch (error) {
+        recordContent.innerHTML = `
+          <div class="error">
+            无法加载该 Markdown 文件。<br />
+            ${escapeHtml(String(error.message || error))}
+          </div>
+        `;
+      }
+    }
+
+    async function loadRecords() {
+      try {
+        const response = await fetch(API_BASE, {
+          headers: {
+            Accept: "application/vnd.github+json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`GitHub API 请求失败：HTTP ${response.status}`);
+        }
+
+        const files = await response.json();
+        state.records = files
+          .filter((entry) => entry.type === "file" && entry.name.toLowerCase().endsWith(".md"))
+          .sort((a, b) => a.name.localeCompare(b.name, "zh-Hans-CN"))
+          .map((entry) => ({
+            name: entry.name.replace(/\.md$/i, ""),
+            path: entry.path,
+            updatedAt: entry.updated_at,
+            downloadUrl: entry.download_url,
+          }));
+
+        if (!state.records.length) {
+          setGlobalStatus("未找到 Markdown 记录");
+          renderList();
+          return;
+        }
+
+        setGlobalStatus(`已加载 ${state.records.length} 条记录`);
+        renderList();
+        await loadRecord(state.records[0]);
+      } catch (error) {
+        setGlobalStatus("加载失败");
+        recordList.innerHTML = `
+          <li class="error">无法读取 <code>testing/</code> 目录。<br />${escapeHtml(String(error.message || error))}</li>
+        `;
+        recordContent.innerHTML = `
+          <div class="error">
+            目录读取失败。<br />
+            请确认仓库是公开的，并且 GitHub Pages 页面可以访问 GitHub Contents API。
+          </div>
+        `;
+      }
+    }
+
+    loadRecords();
+  </script>
+</body>
+</html>
