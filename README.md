@@ -5,7 +5,8 @@
 ## 使用方式
 
 - 把每条测试记录写成 `.md` 文件，放到 [`testing/`](./testing) 目录下。
-- 部署到 GitHub Pages 后，首页 [`index.html`](./index.html) 会自动读取 `testing/` 目录中的所有 Markdown 文件并展示。
+- 每次新增、删除或移动 Markdown 后，运行 `python3 scripts/generate_testing_manifest.py` 生成 [`testing/index.json`](./testing/index.json)。
+- 首页 [`index.html`](./index.html) 会读取这个清单，并按清单里的相对路径加载内容。
 - 页面会按文件名排序显示记录列表，点击某条记录即可查看正文。
 
 ## 记录格式建议
@@ -21,4 +22,4 @@
 - 备注
 ```
 
-只要文件后缀是 `.md`，页面就会自动识别。
+只要文件后缀是 `.md`，并且重新生成了清单，页面就会自动识别。

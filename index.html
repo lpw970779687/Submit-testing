@@ -349,10 +349,8 @@
   </div>
 
   <script>
-    const OWNER = "lpw970779687";
-    const REPO = "Submit-testing";
     const TESTING_DIR = "testing";
-    const API_BASE = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${TESTING_DIR}`;
+    const MANIFEST_URL = `./${TESTING_DIR}/index.json`;
 
     const state = {
       records: [],
@@ -385,6 +383,19 @@
       const div = document.createElement("div");
       div.textContent = text;
       return div.innerHTML;
+    }
+
+    function sortRecords(a, b) {
+      return a.path.localeCompare(b.path, "zh-Hans-CN");
+    }
+
+    async function loadManifest() {
+      const response = await fetch(MANIFEST_URL, { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error(`无法读取清单文件：HTTP ${response.status}`);
+      }
+
+      return response.json();
     }
 
     function renderList() {
@@ -431,7 +442,7 @@
       recordContent.innerHTML = '<div class="empty">正在加载内容...</div>';
 
       try {
-        const response = await fetch(item.downloadUrl, { cache: "no-store" });
+        const response = await fetch(item.path, { cache: "no-store" });
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
         }
@@ -449,26 +460,8 @@
 
     async function loadRecords() {
       try {
-        const response = await fetch(API_BASE, {
-          headers: {
-            Accept: "application/vnd.github+json",
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`GitHub API 请求失败：HTTP ${response.status}`);
-        }
-
-        const files = await response.json();
-        state.records = files
-          .filter((entry) => entry.type === "file" && entry.name.toLowerCase().endsWith(".md"))
-          .sort((a, b) => a.name.localeCompare(b.name, "zh-Hans-CN"))
-          .map((entry) => ({
-            name: entry.name.replace(/\.md$/i, ""),
-            path: entry.path,
-            updatedAt: entry.updated_at,
-            downloadUrl: entry.download_url,
-          }));
+        const manifest = await loadManifest();
+        state.records = (manifest.records || []).sort(sortRecords);
 
         if (!state.records.length) {
           setGlobalStatus("未找到 Markdown 记录");
@@ -482,12 +475,12 @@
       } catch (error) {
         setGlobalStatus("加载失败");
         recordList.innerHTML = `
-          <li class="error">无法读取 <code>testing/</code> 目录。<br />${escapeHtml(String(error.message || error))}</li>
+          <li class="error">无法读取 <code>testing/index.json</code>。<br />${escapeHtml(String(error.message || error))}</li>
         `;
         recordContent.innerHTML = `
           <div class="error">
             目录读取失败。<br />
-            请确认仓库是公开的，并且 GitHub Pages 页面可以访问 GitHub Contents API。
+            请先生成 <code>testing/index.json</code>，然后再刷新页面。
           </div>
         `;
       }
